@@ -115,4 +115,6 @@ MIT License
 
 ## 🙏 致谢
 
-本项目基于 [CloudBase AI ToolKit](https://github.com/TencentCloudBase/CloudBase-AI-ToolKit) 开发，感谢腾讯云开发团队提供的支持。
+感谢腾讯云提供的服务器支持。
+
+
