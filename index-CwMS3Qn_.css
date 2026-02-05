@@ -1,0 +1,3 @@
+""  
+"/* 修复时间选择器在移动端无法显示选项的问题 */"  
+".time-select{width:100%;padding:10px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background-color:white;cursor:pointer;appearance:menulist !important;-webkit-appearance:menulist !important;-moz-appearance:menulist !important}@media (max-width: 768px){.time-select{font-size:16px;padding:12px 8px}}" 

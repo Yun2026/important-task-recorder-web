@@ -1,0 +1,21 @@
+/* 修复时间选择器在移动端无法显示选项的问题 */
+.time-select {
+  width: 100%;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  appearance: menulist;
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+}
+
+/* 确保时间选择器在移动端可以正常显示 */
+@media (max-width: 768px) {
+  .time-select {
+    font-size: 16px; /* 防止iOS缩放 */
+    padding: 12px 8px;
+  }
+}
