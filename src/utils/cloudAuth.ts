@@ -5,19 +5,48 @@ const ENV_ID = 'important-affair-notebook-a047f6'
 
 // 初始化 CloudBase
 let app: any = null
+let isInitialized = false
 
-export function initCloudBase() {
-  if (!app) {
-    app = cloudbase.init({
-      env: ENV_ID
-    })
+export async function initCloudBase(): Promise<boolean> {
+  if (isInitialized && app) {
+    return true
   }
-  return app
+  
+  try {
+    app = cloudbase.init({
+      env: ENV_ID,
+      region: 'ap-shanghai'
+    })
+    
+    // 使用匿名登录获取数据库权限
+    const auth = app.auth()
+    const loginState = await auth.getLoginState()
+    
+    if (!loginState) {
+      // 未登录，进行匿名登录
+      await auth.anonymousAuthProvider().signIn()
+      console.log('CloudBase 匿名登录成功')
+    }
+    
+    isInitialized = true
+    return true
+  } catch (error: any) {
+    console.error('CloudBase 初始化失败:', error)
+    // 即使初始化失败，也尝试继续（可能是已登录状态）
+    if (app) {
+      isInitialized = true
+      return true
+    }
+    return false
+  }
 }
 
 // 获取数据库实例
-function getDatabase() {
-  const app = initCloudBase()
+async function getDatabase() {
+  const success = await initCloudBase()
+  if (!success || !app) {
+    throw new Error('CloudBase 未初始化')
+  }
   return app.database()
 }
 
@@ -37,7 +66,13 @@ export async function registerUser(data: {
   password: string
 }): Promise<{ success: boolean; msg?: string; user?: CloudUser }> {
   try {
-    const db = getDatabase()
+    // 确保 CloudBase 已初始化
+    const initSuccess = await initCloudBase()
+    if (!initSuccess) {
+      return { success: false, msg: '云服务初始化失败，请刷新页面重试' }
+    }
+    
+    const db = await getDatabase()
     const usersCollection = db.collection('users')
 
     // 检查邮箱是否已存在
@@ -77,7 +112,13 @@ export async function loginUser(data: {
   password: string
 }): Promise<{ success: boolean; msg?: string; user?: CloudUser }> {
   try {
-    const db = getDatabase()
+    // 确保 CloudBase 已初始化
+    const initSuccess = await initCloudBase()
+    if (!initSuccess) {
+      return { success: false, msg: '云服务初始化失败，请刷新页面重试' }
+    }
+    
+    const db = await getDatabase()
     const usersCollection = db.collection('users')
 
     // 查询用户
@@ -128,7 +169,14 @@ export function logoutUser() {
 // ==================== 检查邮箱是否注册 ====================
 export async function checkEmailExists(email: string): Promise<boolean> {
   try {
-    const db = getDatabase()
+    // 确保 CloudBase 已初始化
+    const initSuccess = await initCloudBase()
+    if (!initSuccess) {
+      console.warn('CloudBase 初始化失败')
+      return false
+    }
+    
+    const db = await getDatabase()
     const usersCollection = db.collection('users')
     const result = await usersCollection.where({ email }).get()
     return result.data && result.data.length > 0
@@ -141,11 +189,7 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 // ==================== 初始化 CloudBase 并检查 ====================
 export async function initCloudAuth(): Promise<boolean> {
   try {
-    initCloudBase()
-    // 匿名登录获取权限
-    const auth = app.auth()
-    await auth.anonymousAuthProvider().signIn()
-    return true
+    return await initCloudBase()
   } catch (error) {
     console.error('CloudBase 初始化失败:', error)
     return false
