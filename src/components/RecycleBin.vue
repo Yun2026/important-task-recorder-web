@@ -224,13 +224,10 @@ const handleClose = () => {
       <div class="modal-header">
         <div class="header-left">
           <span class="header-icon">🗑️</span>
-          <h2>最近删除</h2>
-          <span class="task-count" v-if="hasTasks">({{ recycledTasks.length }})</span>
-        </div>
-        <div class="header-right">
-          <!-- 回收站开关 -->
+          <h2>回收站</h2>
+          <span class="task-count" v-if="hasTasks">{{ recycledTasks.length }}</span>
+          <!-- 回收站开关 - 迁移到数字右侧 -->
           <div class="recycle-bin-toggle">
-            <span class="toggle-label">回收站</span>
             <label class="switch">
               <input 
                 type="checkbox" 
@@ -240,6 +237,8 @@ const handleClose = () => {
               <span class="slider"></span>
             </label>
           </div>
+        </div>
+        <div class="header-right">
           <button class="close-btn" @click="handleClose">✕</button>
         </div>
       </div>
@@ -406,7 +405,7 @@ const handleClose = () => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .header-right {
@@ -428,20 +427,19 @@ const handleClose = () => {
 
 .task-count {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
 }
 
 /* 回收站开关 */
 .recycle-bin-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.toggle-label {
-  font-size: 14px;
-  color: white;
-  font-weight: 500;
+  margin-left: 4px;
 }
 
 .switch {

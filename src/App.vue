@@ -280,8 +280,14 @@ const selectCategory = (value: string) => {
   closeAllDropdowns()
 }
 
-// 回收站开关状态
-const recycleBinEnabled = ref(localStorage.getItem('VUE_TASK_RECYCLE_BIN_ENABLED') === 'true')
+// 回收站开关状态 - 默认开启（如果用户未设置过）
+const getRecycleBinDefault = () => {
+  const saved = localStorage.getItem('VUE_TASK_RECYCLE_BIN_ENABLED')
+  // 如果用户从未设置过（null），默认开启
+  // 如果用户设置过，使用用户的设置
+  return saved === null ? true : saved === 'true'
+}
+const recycleBinEnabled = ref(getRecycleBinDefault())
 
 // 切换下拉菜单 - 打开一个时关闭其他
 const togglePriorityDropdown = () => {
@@ -406,7 +412,13 @@ const handleRefresh = () => {
 }
 
 const handleDeleteTask = async (id: string) => {
-  await cloudStorage.deleteTask(id)
+  if (recycleBinEnabled.value) {
+    // 回收站开启：移到回收站
+    await cloudStorage.deleteTask(id)
+  } else {
+    // 回收站关闭：直接永久删除
+    await cloudStorage.permanentDeleteTask(id)
+  }
   await loadTasks()
 }
 
@@ -743,7 +755,7 @@ onMounted(() => {
                 <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
                 </svg>
-                <span>最近删除</span>
+                <span>回收站</span>
               </button>
 
 

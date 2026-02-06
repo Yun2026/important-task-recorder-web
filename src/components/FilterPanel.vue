@@ -93,7 +93,7 @@ const handleFilterChange = () => {
 
         <button class="btn-recycle" @click="$emit('showRecycleBin')">
           <span class="btn-icon">🗑️</span>
-          <span>最近删除</span>
+          <span>回收站</span>
         </button>
       </div>
     </div>

@@ -41,3 +41,17 @@ deploy*.zip
 
 # CloudBase local
 .cloudbase/
+
+# AI Editor Configs
+.agent/
+.claude/
+.clinerules/
+.codebuddy/
+.codex/
+.comate/
+.cursor/
+.gemini/
+.github/copilot-instructions.md
+.kiro/
+.windsurf/
+.vscode/settings.json

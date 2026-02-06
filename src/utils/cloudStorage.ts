@@ -281,7 +281,7 @@ export const cloudStorage = {
     }
   },
 
-  // ===== 永久删除 =====
+  // ===== 永久删除（仅从API） =====
   async permanentDelete(id: string): Promise<void> {
     try {
       const taskId = parseInt(id)
@@ -290,6 +290,36 @@ export const cloudStorage = {
       }
     } catch (error) {
       console.error('永久删除失败:', error)
+    }
+  },
+
+  // ===== 永久删除任务（本地+API）- 用于回收站关闭时 =====
+  async permanentDeleteTask(id: string): Promise<void> {
+    try {
+      notifySyncStatus('syncing', '正在删除...')
+      
+      // 从本地任务列表移除
+      const localData = localStorage.getItem(getTasksKey())
+      if (localData) {
+        const tasks: Task[] = JSON.parse(localData)
+        const updatedTasks = tasks.filter(t => t.id !== id)
+        localStorage.setItem(getTasksKey(), JSON.stringify(updatedTasks))
+      }
+      
+      // 尝试从服务器删除
+      try {
+        const taskId = parseInt(id)
+        if (!isNaN(taskId)) {
+          await taskApi.delete(taskId)
+        }
+      } catch (apiError) {
+        console.log('API删除失败，已从本地删除:', apiError)
+      }
+      
+      notifySyncStatus('synced', '已删除')
+    } catch (error) {
+      console.error('永久删除任务失败:', error)
+      notifySyncStatus('error', '删除失败')
     }
   },
 

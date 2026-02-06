@@ -82,8 +82,8 @@ const handleDelete = (id: string) => {
   
   if (props.recycleBinEnabled) {
     confirmContent.value = task 
-      ? `确定要删除事务「${task.title}」吗？删除后可在最近删除中30天内找回。`
-      : '确定要删除这个事务吗？删除后可在最近删除中30天内找回。'
+      ? `确定要删除事务「${task.title}」吗？删除后可在回收站中30天内找回。`
+      : '确定要删除这个事务吗？删除后可在回收站中30天内找回。'
   } else {
     confirmContent.value = task 
       ? `确定要删除事务「${task.title}」吗？删除后将永久删除，无法恢复！`
