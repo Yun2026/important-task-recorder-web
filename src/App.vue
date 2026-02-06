@@ -14,7 +14,8 @@ import HelpModal from './components/HelpModal.vue'
 import FocusMode from './components/FocusMode.vue'
 import { AlarmIcon } from 'tdesign-icons-vue-next'
 import { Task, FilterCondition, ModalType, ViewType, SortType, TaskStatus, Priority, Category } from './types'
-import { cloudStorage, setSyncStatusCallback, authApi } from './utils/cloudStorage'
+import { cloudStorage, setSyncStatusCallback } from './utils/cloudStorage'
+import { getCurrentUser, logoutUser, initCloudAuth } from './utils/cloudAuth'
 
 const tasks = ref<Task[]>([])
 const viewType = ref<ViewType>(ViewType.LIST)
@@ -94,13 +95,16 @@ const showConfirmDialog = (options: {
   }
 }
 
-// 从localStorage读取登录状态
-const loadUserState = () => {
-  const savedUser = localStorage.getItem('VUE_TASK_USER')
-  if (savedUser) {
-    const user = JSON.parse(savedUser)
+// 从CloudBase获取登录状态
+const loadUserState = async () => {
+  // 初始化 CloudBase
+  await initCloudAuth()
+  
+  // 获取当前用户
+  const user = getCurrentUser()
+  if (user) {
     isLoggedIn.value = true
-    username.value = user.username
+    username.value = user.nickname || user.email || '用户'
   }
 }
 
@@ -113,8 +117,7 @@ const saveUserState = (user: { username: string; email?: string }) => {
 
 // 退出登录
 const logout = () => {
-  localStorage.removeItem('VUE_TASK_USER')
-  localStorage.removeItem('token')
+  logoutUser()
   isLoggedIn.value = false
   username.value = ''
   // 清除登录/注册表单
@@ -123,48 +126,30 @@ const logout = () => {
   loadTasks()
 }
 
-// 后端API登录处理
-const handleLogin = async (data: { email: string; password: string }) => {
+// 云端登录处理
+const handleLogin = async (data: { email: string; password: string; nickname?: string }) => {
   try {
-    const response = await authApi.login({ email: data.email, password: data.password })
-    if (response.success && 'data' in response && response.data) {
-      const { token, userInfo } = response.data
-      localStorage.setItem('token', token)
-      saveUserState({ username: userInfo.nickname, email: userInfo.email })
-      showToastMessage('登录成功')
-      await loadTasks()
-      // 登录成功后关闭弹窗
-      authModalVisible.value = false
-    } else {
-      const errorMsg = (response as { msg?: string }).msg || '登录失败'
-      showToastMessage(errorMsg)
-    }
+    // 登录成功后保存状态
+    saveUserState({ username: data.nickname || data.email.split('@')[0], email: data.email })
+    showToastMessage('登录成功')
+    await loadTasks()
+    // 登录成功后关闭弹窗
+    authModalVisible.value = false
   } catch (error) {
     console.error('登录失败：', error)
     showToastMessage('登录失败，请重试')
   }
 }
 
-// 后端API注册处理
+// 云端注册处理
+// 云端注册处理
 const handleRegister = async (data: { nickname: string; email: string; password: string; confirmPassword: string }) => {
   try {
-    const response = await authApi.register({ 
-      nickname: data.nickname, 
-      email: data.email, 
-      password: data.password,
-      confirmPassword: data.confirmPassword 
-    })
-    if (response.success && 'data' in response && response.data) {
-      const { token, userInfo } = response.data
-      localStorage.setItem('token', token)
-      saveUserState({ username: userInfo.nickname, email: userInfo.email })
-      showToastMessage('注册成功，已自动登录')
-      await loadTasks()
-      authModalVisible.value = false
-    } else {
-      const errorMsg = (response as { msg?: string }).msg || '注册失败'
-      showToastMessage(errorMsg)
-    }
+    // 注册成功后保存状态
+    saveUserState({ username: data.nickname, email: data.email })
+    showToastMessage('注册成功，已自动登录')
+    await loadTasks()
+    authModalVisible.value = false
   } catch (error) {
     console.error('注册失败：', error)
     showToastMessage('注册失败，请重试')
@@ -571,9 +556,9 @@ const loadTasks = async () => {
 }
 
 // 组件挂载时初始化
-onMounted(() => {
-  loadUserState()
-  loadTasks()
+onMounted(async () => {
+  await loadUserState()
+  await loadTasks()
   setSyncStatusCallback((_status, message) => {
     if (message) {
       showToastMessage(message)

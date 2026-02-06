@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { CloseIcon } from 'tdesign-icons-vue-next'
+import { loginUser, registerUser, checkEmailExists, initCloudAuth } from '@/utils/cloudAuth'
 
 defineProps<{
   visible: boolean
@@ -8,9 +9,14 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'login', data: { email: string; password: string }): void
+  (e: 'login', data: { email: string; password: string; nickname: string }): void
   (e: 'register', data: { nickname: string; email: string; password: string; confirmPassword: string }): void
 }>()
+
+// 初始化 CloudBase
+onMounted(async () => {
+  await initCloudAuth()
+})
 
 // ==================== 登录/注册切换 ====================
 const isLogin = ref(true)
@@ -167,13 +173,12 @@ const validateRegister = () => {
 }
 
 // ==================== 检查邮箱是否已注册 ====================
-const isEmailRegistered = (email: string): boolean => {
-  const existingUsers = JSON.parse(localStorage.getItem('mock_users') || '[]')
-  return existingUsers.some((u: any) => u.email === email)
+const isEmailRegistered = async (email: string): Promise<boolean> => {
+  return await checkEmailExists(email)
 }
 
 // ==================== 处理登录 ====================
-const handleLogin = () => {
+const handleLogin = async () => {
   // 表单验证
   if (!validateLogin()) {
     return
@@ -182,15 +187,14 @@ const handleLogin = () => {
   const email = loginForm.value.email.trim()
   const password = loginForm.value.password
 
-  // 检查用户是否存在
-  const existingUsers = JSON.parse(localStorage.getItem('mock_users') || '[]')
-  const user = existingUsers.find((u: any) => u.email === email && u.password === password)
+  // 调用云端登录
+  const result = await loginUser({ email, password })
 
-  if (!user) {
+  if (!result.success) {
     // 账号不存在或密码错误 - 显示自定义弹窗
     showDialog({
       title: '登录失败',
-      content: '密码错误或账号不存在',
+      content: result.msg || '密码错误或账号不存在',
       confirmText: '',
       cancelText: '取消',
       showConfirm: false,
@@ -200,11 +204,15 @@ const handleLogin = () => {
   }
 
   // 登录成功
-  emit('login', { email, password })
+  emit('login', { 
+    email, 
+    password,
+    nickname: result.user?.nickname || ''
+  })
 }
 
 // ==================== 处理注册 ====================
-const handleRegister = () => {
+const handleRegister = async () => {
   // 表单验证
   if (!validateRegister()) {
     return
@@ -213,11 +221,31 @@ const handleRegister = () => {
   const email = registerForm.value.email.trim()
 
   // 检查账号是否已存在
-  if (isEmailRegistered(email)) {
+  const exists = await isEmailRegistered(email)
+  if (exists) {
     // 账号已存在 - 显示自定义弹窗
     showDialog({
       title: '注册失败',
       content: '该账号已存在',
+      confirmText: '确认',
+      cancelText: '',
+      showConfirm: true,
+      showCancel: false
+    })
+    return
+  }
+
+  // 调用云端注册
+  const result = await registerUser({
+    nickname: registerForm.value.nickname,
+    email: registerForm.value.email,
+    password: registerForm.value.password
+  })
+
+  if (!result.success) {
+    showDialog({
+      title: '注册失败',
+      content: result.msg || '注册失败，请重试',
       confirmText: '确认',
       cancelText: '',
       showConfirm: true,
