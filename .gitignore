@@ -55,3 +55,16 @@ deploy*.zip
 .kiro/
 .windsurf/
 .vscode/settings.json
+.qoder/
+.qwen/
+.roo/
+.trae/
+.lingma/
+.opencode/
+.mcp.json
+
+# Deploy scripts
+*.bat
+*.sh
+docker-compose*.yml
+cloudbaserc.json

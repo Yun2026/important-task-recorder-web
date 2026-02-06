@@ -35,110 +35,99 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<{ suc
   }
 }
 
-// 本地存储模式 - 认证API模拟
-// 纯本地存储实现，不依赖后端服务
+// 认证API - 调用后端服务（支持跨设备登录）
 export const authApi = {
-  // 注册 - 本地存储模式
-  // 注意：账号是否已存在的验证已在 AuthModal.vue 中完成，此函数仅执行注册操作
+  // 注册 - 调用后端API
   register: async (data: { nickname: string; email: string; password: string; confirmPassword: string }) => {
-    console.log('Register (mock local):', data)
+    console.log('Register (API):', data)
     try {
-      // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-      // 创建新用户
-      const newUser = {
-        id: Date.now(),
-        nickname: data.nickname,
-        email: data.email,
-        password: data.password, // 明文存储仅用于演示
-        create_time: new Date().toISOString()
-      }
-
-      // 保存到本地存储
-      const existingUsers = JSON.parse(localStorage.getItem('mock_users') || '[]')
-      existingUsers.push(newUser)
-      localStorage.setItem('mock_users', JSON.stringify(existingUsers))
-
-      // 生成token并自动登录
-      const mockToken = 'mock_token_' + Date.now()
-      localStorage.setItem('token', mockToken)
-      localStorage.setItem('VUE_TASK_USER', JSON.stringify({
-        username: data.nickname,
-        email: data.email
-      }))
-
-      return {
-        success: true,
-        data: {
-          token: mockToken,
-          userInfo: {
-            userId: newUser.id,
-            nickname: data.nickname,
-            email: data.email
-          }
-        }
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      
+      const result = await response.json()
+      
+      if (result.code === 200 || result.code === 201) {
+        // 注册成功后自动登录
+        const loginResponse = await authApi.login({ 
+          email: data.email, 
+          password: data.password 
+        })
+        return loginResponse
+      } else {
+        return { success: false, msg: result.msg || '注册失败' }
       }
     } catch (error) {
       console.error('注册失败:', error)
-      return { success: false, msg: '注册失败，请重试' }
+      return { success: false, msg: '网络错误，请检查后端服务是否正常运行' }
     }
   },
   
-  // 登录 - 本地存储模式
-  // 注意：账号存在性验证已在 AuthModal.vue 中完成，此函数仅执行登录操作
+  // 登录 - 调用后端API
   login: async (data: { email: string; password: string }) => {
-    console.log('Login (mock local):', data)
+    console.log('Login (API):', data)
     try {
-      // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-      // 从本地存储查找用户（验证已通过，直接获取用户信息）
-      const existingUsers = JSON.parse(localStorage.getItem('mock_users') || '[]')
-      const user = existingUsers.find((u: any) => u.email === data.email && u.password === data.password)
-
-      if (!user) {
-        return { success: false, msg: '用户不存在' }
-      }
-
-      // 生成 token 并保存登录状态
-      const mockToken = 'mock_token_' + Date.now()
-      localStorage.setItem('token', mockToken)
-      localStorage.setItem('VUE_TASK_USER', JSON.stringify({
-        username: user.nickname,
-        email: user.email
-      }))
-
-      return {
-        success: true,
-        data: {
-          token: mockToken,
-          userInfo: {
-            userId: user.id,
-            nickname: user.nickname,
-            email: user.email
-          }
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      
+      const result = await response.json()
+      
+      if (result.code === 200 && result.data) {
+        // 保存token和用户信息到localStorage
+        localStorage.setItem('token', result.data.token)
+        localStorage.setItem('VUE_TASK_USER', JSON.stringify({
+          username: result.data.userInfo.nickname,
+          email: result.data.userInfo.email
+        }))
+        
+        return { 
+          success: true, 
+          data: result.data 
         }
+      } else {
+        return { success: false, msg: result.msg || '登录失败' }
       }
     } catch (error) {
       console.error('登录失败:', error)
-      return { success: false, msg: '登录失败，请重试' }
+      return { success: false, msg: '网络错误，请检查后端服务是否正常运行' }
     }
   },
   
-  // 获取当前用户信息 - 本地存储模式
-  getCurrentUser: () => {
-    const userInfo = localStorage.getItem('VUE_TASK_USER')
-    if (userInfo) {
-      return Promise.resolve({ 
-        success: true, 
-        data: JSON.parse(userInfo)
-      })
+  // 获取当前用户信息 - 调用后端API
+  getCurrentUser: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      return { success: false, msg: '用户未登录' }
     }
-    return Promise.resolve({ 
-      success: false, 
-      msg: '用户未登录' 
-    })
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      const result = await response.json()
+      
+      if (result.code === 200 && result.data) {
+        return { 
+          success: true, 
+          data: result.data 
+        }
+      } else {
+        return { success: false, msg: result.msg || '获取用户信息失败' }
+      }
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+      return { success: false, msg: '网络错误' }
+    }
   }
 }
 

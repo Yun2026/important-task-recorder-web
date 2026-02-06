@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { CloseIcon } from 'tdesign-icons-vue-next'
-import { loginUser, registerUser, checkEmailExists, initCloudAuth } from '@/utils/cloudAuth'
+import { loginUser, registerUser, checkEmailExists, initCloudAuth } from '@/utils/cloudAuth2'
 
 defineProps<{
   visible: boolean
 }>()
 
-const emit = defineEmits<{
+// 事件定义
+interface Emits {
   (e: 'close'): void
   (e: 'login', data: { email: string; password: string; nickname: string }): void
   (e: 'register', data: { nickname: string; email: string; password: string; confirmPassword: string }): void
-}>()
+}
+
+const emit = defineEmits<Emits>()
 
 // 初始化 CloudBase
 onMounted(async () => {

@@ -69,8 +69,8 @@ const handleMaskClick = (e: MouseEvent) => {
                     </svg>
                   </div>
                   <div class="feature-info">
-                    <h4 class="feature-name">多端同步</h4>
-                    <p class="feature-desc">同一账号登录PC/移动端，事务数据实时同步</p>
+                    <h4 class="feature-name">云端存储</h4>
+                    <p class="feature-desc">登录账号后，事务数据安全存储在云端</p>
                   </div>
                 </div>
 

@@ -21,14 +21,21 @@ FROM nginx:alpine
 # 复制构建产物到 nginx 目录
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制自定义 nginx 配置（添加反向代理到后端）
+# Nginx 配置（前端 + 后端 API 代理）
 RUN echo 'server { \
     listen 80; \
     server_name localhost; \
     \
-    # API 请求代理到后端服务 \
+    # 前端静态资源 \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files $uri $uri/ /index.html; \
+    } \
+    \
+    # 后端 API 代理 \
     location /api/ { \
-        proxy_pass http://backend:3001/api/; \
+        proxy_pass http://task-recorder-backend:3001/; \
         proxy_http_version 1.1; \
         proxy_set_header Upgrade $http_upgrade; \
         proxy_set_header Connection "upgrade"; \
@@ -36,13 +43,9 @@ RUN echo 'server { \
         proxy_set_header X-Real-IP $remote_addr; \
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
         proxy_set_header X-Forwarded-Proto $scheme; \
+        proxy_cache_bypass $http_upgrade; \
     } \
     \
-    location / { \
-        root /usr/share/nginx/html; \
-        index index.html index.htm; \
-        try_files $uri $uri/ /index.html; \
-    } \
     error_page 500 502 503 504 /50x.html; \
     location = /50x.html { \
         root /usr/share/nginx/html; \

@@ -14,8 +14,8 @@ import HelpModal from './components/HelpModal.vue'
 import FocusMode from './components/FocusMode.vue'
 import { AlarmIcon } from 'tdesign-icons-vue-next'
 import { Task, FilterCondition, ModalType, ViewType, SortType, TaskStatus, Priority, Category } from './types'
-import { cloudStorage, setSyncStatusCallback } from './utils/cloudStorage'
-import { getCurrentUser, logoutUser, initCloudAuth } from './utils/cloudAuth'
+import { cloudStorage, setSyncStatusCallback } from './utils/cloudStorage2'
+import { getCurrentUser, logoutUser, initCloudAuth } from './utils/cloudAuth2'
 
 const tasks = ref<Task[]>([])
 const viewType = ref<ViewType>(ViewType.LIST)
@@ -794,8 +794,8 @@ onMounted(async () => {
       ref="authModalRef"
       :visible="authModalVisible"
       @close="authModalVisible = false"
-      @login="(data) => handleLogin(data)"
-      @register="(data) => handleRegister(data)"
+      @login="handleLogin"
+      @register="handleRegister"
     />
 
     <!-- 网站说明书模态框 -->
