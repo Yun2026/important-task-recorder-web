@@ -1,5 +1,5 @@
 // API接口配置 - 使用相对路径，通过 Nginx 反向代理到后端
-const API_BASE_URL = ''
+const API_BASE_URL = '/api' // 启用后端API
 
 // 获取token
 const getToken = () => localStorage.getItem('token')
@@ -31,110 +31,77 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<{ suc
     }
   } catch (error) {
     console.error('API请求失败:', error)
-    return { success: false, msg: '网络请求失败' }
+    return { success: false, msg: '网络请求失败，请检查服务器是否运行' }
   }
 }
 
-// 认证API - 调用后端服务（支持跨设备登录）
+// 认证响应类型
+interface AuthResponse {
+  token: string
+  user: {
+    id: string
+    email: string
+    nickname: string
+  }
+}
+
+// 认证API - 使用后端API
 export const authApi = {
-  // 注册 - 调用后端API
+  // 注册
   register: async (data: { nickname: string; email: string; password: string; confirmPassword: string }) => {
-    console.log('Register (API):', data)
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+    console.log('Register (Backend):', data)
+    const result = await request<AuthResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        nickname: data.nickname,
+        email: data.email,
+        password: data.password
       })
-      
-      const result = await response.json()
-      
-      if (result.code === 200 || result.code === 201) {
-        // 注册成功后自动登录
-        const loginResponse = await authApi.login({ 
-          email: data.email, 
-          password: data.password 
-        })
-        return loginResponse
-      } else {
-        return { success: false, msg: result.msg || '注册失败' }
-      }
-    } catch (error) {
-      console.error('注册失败:', error)
-      return { success: false, msg: '网络错误，请检查后端服务是否正常运行' }
-    }
-  },
-  
-  // 登录 - 调用后端API
-  login: async (data: { email: string; password: string }) => {
-    console.log('Login (API):', data)
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      
-      const result = await response.json()
-      
-      if (result.code === 200 && result.data) {
-        // 保存token和用户信息到localStorage
-        localStorage.setItem('token', result.data.token)
-        localStorage.setItem('VUE_TASK_USER', JSON.stringify({
-          username: result.data.userInfo.nickname,
-          email: result.data.userInfo.email
-        }))
-        
-        return { 
-          success: true, 
-          data: result.data 
-        }
-      } else {
-        return { success: false, msg: result.msg || '登录失败' }
-      }
-    } catch (error) {
-      console.error('登录失败:', error)
-      return { success: false, msg: '网络错误，请检查后端服务是否正常运行' }
-    }
-  },
-  
-  // 获取当前用户信息 - 调用后端API
-  getCurrentUser: async () => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      return { success: false, msg: '用户未登录' }
+    })
+    
+    if (result.success && result.data) {
+      localStorage.setItem('token', result.data.token)
+      localStorage.setItem('VUE_TASK_USER', JSON.stringify(result.data.user))
     }
     
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+    return result
+  },
+  
+  // 登录
+  login: async (data: { email: string; password: string }) => {
+    console.log('Login (Backend):', data)
+    const result = await request<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password
       })
-      
-      const result = await response.json()
-      
-      if (result.code === 200 && result.data) {
-        return { 
-          success: true, 
-          data: result.data 
-        }
-      } else {
-        return { success: false, msg: result.msg || '获取用户信息失败' }
-      }
-    } catch (error) {
-      console.error('获取用户信息失败:', error)
-      return { success: false, msg: '网络错误' }
+    })
+    
+    if (result.success && result.data) {
+      localStorage.setItem('token', result.data.token)
+      localStorage.setItem('VUE_TASK_USER', JSON.stringify(result.data.user))
     }
+    
+    return result
+  },
+  
+  // 获取当前用户信息
+  getCurrentUser: async () => {
+    return await request('/auth/me')
+  },
+  
+  // 退出登录
+  logout: () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('VUE_TASK_USER')
   }
 }
 
-// 事务相关API
+// 事务相关API - 直接使用CloudBase数据库
 export interface TaskData {
-  id?: number
-  user_id?: number
+  id?: string
+  user_id?: string
   title: string
   content?: string
   start_time?: string
@@ -148,42 +115,67 @@ export interface TaskData {
 
 export const taskApi = {
   // 获取所有事务
-  getAll: () => request<TaskData[]>('/api/tasks', { method: 'GET' }),
+  getAll: async () => {
+    return await request<TaskData[]>('/tasks')
+  },
   
   // 添加事务
-  create: (data: Partial<TaskData>) => 
-    request<TaskData>('/api/tasks', {
+  create: async (data: Partial<TaskData>) => {
+    return await request<TaskData>('/tasks', {
       method: 'POST',
       body: JSON.stringify(data)
-    }),
+    })
+  },
   
   // 更新事务
-  update: (id: number, data: Partial<TaskData>) => 
-    request<TaskData>(`/api/tasks/${id}`, {
+  update: async (id: string, data: Partial<TaskData>) => {
+    return await request<TaskData>(`/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
-    }),
+    })
+  },
   
   // 更新完成状态
-  toggleComplete: (id: number, isCompleted: boolean) => 
-    request<TaskData>(`/api/tasks/${id}/complete`, {
-      method: 'PUT',
+  toggleComplete: async (id: string, isCompleted: boolean) => {
+    return await request(`/tasks/${id}/toggle`, {
+      method: 'PATCH',
       body: JSON.stringify({ is_completed: isCompleted })
-    }),
+    })
+  },
   
   // 删除事务
-  delete: (id: number) => 
-    request(`/api/tasks/${id}`, { method: 'DELETE' }),
+  delete: async (id: string) => {
+    return await request(`/tasks/${id}`, {
+      method: 'DELETE'
+    })
+  },
   
   // 清除已完成事务
-  clearCompleted: () => 
-    request('/api/tasks/clear-completed', { method: 'DELETE' })
+  clearCompleted: async () => {
+    return await request('/tasks/completed/clear', {
+      method: 'DELETE'
+    })
+  }
 }
 
-// 回收站相关API（预留）
+// 回收站相关API
 export const recycleBinApi = {
-  getAll: () => Promise.resolve({ success: true, data: [] }),
-  restore: (_id: string) => Promise.resolve({ success: true }),
-  permanentDelete: (_id: string) => Promise.resolve({ success: true }),
-  clear: () => Promise.resolve({ success: true })
+  getAll: async () => {
+    return await request('/recycle-bin')
+  },
+  restore: async (id: string) => {
+    return await request(`/recycle-bin/${id}/restore`, {
+      method: 'POST'
+    })
+  },
+  permanentDelete: async (id: string) => {
+    return await request(`/recycle-bin/${id}`, {
+      method: 'DELETE'
+    })
+  },
+  clear: async () => {
+    return await request('/recycle-bin/clear', {
+      method: 'DELETE'
+    })
+  }
 }

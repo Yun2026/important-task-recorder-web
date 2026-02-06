@@ -203,11 +203,11 @@ export const cloudStorage = {
     }
   },
 
-  // ===== 更新任务 =====
+// ===== 更新任务 =====
   async updateTask(updatedTask: Task): Promise<void> {
     try {
       notifySyncStatus('syncing', '正在更新...')
-      
+
       // 先更新本地
       const localData = localStorage.getItem(getTasksKey())
       if (localData) {
@@ -218,11 +218,12 @@ export const cloudStorage = {
           localStorage.setItem(getTasksKey(), JSON.stringify(tasks))
         }
       }
-      
+
       // 尝试同步到服务器
       try {
-        const taskId = parseInt(updatedTask.id)
-        if (!isNaN(taskId)) {
+        const taskId = updatedTask.id
+        if (typeof taskId === 'string') {
+          // 直接传递字符串ID
           const result = await taskApi.update(taskId, convertToTaskData(updatedTask))
           if (result.success) {
             notifySyncStatus('synced', '已更新')
@@ -242,38 +243,37 @@ export const cloudStorage = {
     }
   },
 
-  // ===== 删除任务（移到回收站） =====
+// ===== 删除任务（移到回收站） =====
   async deleteTask(id: string): Promise<void> {
     try {
       notifySyncStatus('syncing', '正在删除...')
-      
+
       // 先从本地获取任务信息
       const localData = localStorage.getItem(getTasksKey())
       const tasks: Task[] = localData ? JSON.parse(localData) : []
       const task = tasks.find(t => t.id === id)
-      
+
       if (task) {
         // 移到本地回收站
         const recycleData = localStorage.getItem(getRecycleKey())
         const recycleTasks: Task[] = recycleData ? JSON.parse(recycleData) : []
         recycleTasks.push(task)
         localStorage.setItem(getRecycleKey(), JSON.stringify(recycleTasks))
-        
+
         // 从本地任务列表移除
         const updatedTasks = tasks.filter(t => t.id !== id)
         localStorage.setItem(getTasksKey(), JSON.stringify(updatedTasks))
       }
-      
+
       // 尝试从服务器删除
       try {
-        const taskId = parseInt(id)
-        if (!isNaN(taskId)) {
-          await taskApi.delete(taskId)
+        if (typeof id === 'string') {
+          await taskApi.delete(id)
         }
       } catch (apiError) {
         console.log('API删除失败，已从本地删除:', apiError)
       }
-      
+
       notifySyncStatus('synced', '已删除')
     } catch (error) {
       console.error('删除任务失败:', error)
@@ -284,20 +284,19 @@ export const cloudStorage = {
   // ===== 永久删除（仅从API） =====
   async permanentDelete(id: string): Promise<void> {
     try {
-      const taskId = parseInt(id)
-      if (!isNaN(taskId)) {
-        await taskApi.delete(taskId)
+      if (typeof id === 'string') {
+        await taskApi.delete(id)
       }
     } catch (error) {
       console.error('永久删除失败:', error)
     }
   },
 
-  // ===== 永久删除任务（本地+API）- 用于回收站关闭时 =====
+// ===== 永久删除任务（本地+API）- 用于回收站关闭时 =====
   async permanentDeleteTask(id: string): Promise<void> {
     try {
       notifySyncStatus('syncing', '正在删除...')
-      
+
       // 从本地任务列表移除
       const localData = localStorage.getItem(getTasksKey())
       if (localData) {
@@ -305,17 +304,16 @@ export const cloudStorage = {
         const updatedTasks = tasks.filter(t => t.id !== id)
         localStorage.setItem(getTasksKey(), JSON.stringify(updatedTasks))
       }
-      
+
       // 尝试从服务器删除
       try {
-        const taskId = parseInt(id)
-        if (!isNaN(taskId)) {
-          await taskApi.delete(taskId)
+        if (typeof id === 'string') {
+          await taskApi.delete(id)
         }
       } catch (apiError) {
         console.log('API删除失败，已从本地删除:', apiError)
       }
-      
+
       notifySyncStatus('synced', '已删除')
     } catch (error) {
       console.error('永久删除任务失败:', error)
@@ -323,7 +321,7 @@ export const cloudStorage = {
     }
   },
 
-  // ===== 切换任务状态 =====
+// ===== 切换任务状态 =====
   async toggleTaskStatus(id: string): Promise<void> {
     try {
       const tasks = await this.getTasks()
@@ -332,17 +330,16 @@ export const cloudStorage = {
         const isCompleted = task.status === TaskStatus.FINISHED
         const newStatus = isCompleted ? TaskStatus.UNFINISHED : TaskStatus.FINISHED
         notifySyncStatus('syncing', '正在更新...')
-        
-        const taskId = parseInt(id)
-        if (!isNaN(taskId)) {
-          const result = await taskApi.toggleComplete(taskId, !isCompleted)
+
+        if (typeof id === 'string') {
+          const result = await taskApi.toggleComplete(id, !isCompleted)
           if (result.success) {
             notifySyncStatus('synced', '状态已更新')
           } else {
-            notifySyncStatus('error', result.msg || '更新失败')
+            notifySyncStatus('error', '更新失败')
           }
         }
-        
+
         // 无论API是否成功，都更新本地存储以确保UI立即响应
         const localData = localStorage.getItem(getTasksKey())
         if (localData) {

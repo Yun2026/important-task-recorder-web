@@ -16,9 +16,13 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
-// 初始化 CloudBase
+// 初始化 CloudBase（可选，失败不影响功能）
 onMounted(async () => {
-  await initCloudAuth()
+  try {
+    await initCloudAuth()
+  } catch (error) {
+    console.log('CloudBase 初始化失败（可选）:', error)
+  }
 })
 
 // ==================== 登录/注册切换 ====================
@@ -177,7 +181,12 @@ const validateRegister = () => {
 
 // ==================== 检查邮箱是否已注册 ====================
 const isEmailRegistered = async (email: string): Promise<boolean> => {
-  return await checkEmailExists(email)
+  try {
+    return await checkEmailExists(email)
+  } catch (error) {
+    console.error('isEmailRegistered 出错:', error)
+    return false
+  }
 }
 
 // ==================== 处理登录 ====================
@@ -216,54 +225,76 @@ const handleLogin = async () => {
 
 // ==================== 处理注册 ====================
 const handleRegister = async () => {
-  // 表单验证
-  if (!validateRegister()) {
-    return
-  }
+  try {
+    // 表单验证
+    if (!validateRegister()) {
+      return
+    }
 
-  const email = registerForm.value.email.trim()
+    const email = registerForm.value.email.trim()
+    console.log('开始注册流程，邮箱:', email)
 
-  // 检查账号是否已存在
-  const exists = await isEmailRegistered(email)
-  if (exists) {
-    // 账号已存在 - 显示自定义弹窗
+    // 检查账号是否已存在
+    let exists = false
+    try {
+      exists = await isEmailRegistered(email)
+      console.log('邮箱检查结果:', exists)
+    } catch (checkError) {
+      console.error('检查邮箱时出错:', checkError)
+    }
+    
+    if (exists) {
+      // 账号已存在 - 显示自定义弹窗
+      showDialog({
+        title: '注册失败',
+        content: '该账号已存在',
+        confirmText: '确认',
+        cancelText: '',
+        showConfirm: true,
+        showCancel: false
+      })
+      return
+    }
+
+    // 调用注册
+    console.log('调用registerUser...')
+    const result = await registerUser({
+      nickname: registerForm.value.nickname,
+      email: registerForm.value.email,
+      password: registerForm.value.password
+    })
+    console.log('注册结果:', result)
+
+    if (!result.success) {
+      showDialog({
+        title: '注册失败',
+        content: result.msg || '注册失败，请重试',
+        confirmText: '确认',
+        cancelText: '',
+        showConfirm: true,
+        showCancel: false
+      })
+      return
+    }
+
+    // 注册成功
+    emit('register', {
+      nickname: registerForm.value.nickname,
+      email: registerForm.value.email,
+      password: registerForm.value.password,
+      confirmPassword: registerForm.value.confirmPassword
+    })
+  } catch (error: any) {
+    console.error('handleRegister 捕获到错误:', error)
     showDialog({
       title: '注册失败',
-      content: '该账号已存在',
+      content: '注册过程出错: ' + (error.message || '未知错误'),
       confirmText: '确认',
       cancelText: '',
       showConfirm: true,
       showCancel: false
     })
-    return
   }
-
-  // 调用云端注册
-  const result = await registerUser({
-    nickname: registerForm.value.nickname,
-    email: registerForm.value.email,
-    password: registerForm.value.password
-  })
-
-  if (!result.success) {
-    showDialog({
-      title: '注册失败',
-      content: result.msg || '注册失败，请重试',
-      confirmText: '确认',
-      cancelText: '',
-      showConfirm: true,
-      showCancel: false
-    })
-    return
-  }
-
-  // 注册成功
-  emit('register', {
-    nickname: registerForm.value.nickname,
-    email: registerForm.value.email,
-    password: registerForm.value.password,
-    confirmPassword: registerForm.value.confirmPassword
-  })
 }
 
 // ==================== 清除所有表单数据 ====================
