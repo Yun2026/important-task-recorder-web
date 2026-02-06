@@ -24,7 +24,14 @@
 
 ## 🌐 在线访问
 
-**访问地址**: http://106.52.126.158:8080
+**服务器地址**: http://106.52.126.158:8080
+
+**部署信息**:
+- 服务器: 腾讯云轻量应用服务器 (lhins-p81lgfsx)
+- 地域: 广州 (ap-guangzhou)
+- 部署方式: Docker Compose
+- 容器运行状态: ✅ 正常运行
+- 最后部署: 2026-02-07
 
 ## 🚀 快速开始
 
@@ -57,3 +64,23 @@ cd /path/to/project && docker-compose up -d --build
 - **后端**: Node.js + Express + SQLite
 - **部署**: Docker + Nginx
 - **认证**: JWT Token
+
+## 📄 许可证
+
+MIT License
+
+---
+
+## 🙏 致谢
+
+感谢以下开源项目和技术社区的支持：
+- Vue.js - 渐进式 JavaScript 框架
+- TDesign Vue Next - 腾讯企业级设计体系
+- Node.js + Express - 后端服务框架
+- SQLite - 轻量级数据库
+- Docker - 容器化技术
+- Nginx - 高性能 Web 服务器
+
+---
+
+**享受高效的任务管理体验！** 🚀
