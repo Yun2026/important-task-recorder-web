@@ -63,18 +63,6 @@ const handleMaskClick = (e: MouseEvent) => {
               </h3>
               <div class="feature-cards">
                 <div class="feature-card">
-                  <div class="feature-icon blue">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="currentColor"/>
-                    </svg>
-                  </div>
-                  <div class="feature-info">
-                    <h4 class="feature-name">云端存储</h4>
-                    <p class="feature-desc">登录账号后，事务数据安全存储在云端</p>
-                  </div>
-                </div>
-
-                <div class="feature-card">
                   <div class="feature-icon yellow">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" fill="currentColor"/>
@@ -143,6 +131,15 @@ const handleMaskClick = (e: MouseEvent) => {
               <div class="notice-content">
                 <h4>关于忘记密码</h4>
                 <p>因技术原因，暂未设置忘记密码功能。请您妥善保管好登录密码，建议将密码记录在安全的地方。</p>
+              </div>
+            </div>
+
+            <!-- 云端同步提示 -->
+            <div class="notice-section">
+              <div class="notice-icon">☁️</div>
+              <div class="notice-content">
+                <h4>关于云端同步</h4>
+                <p>因技术调试原因，当前云端同步功能暂不稳定，我们正在全力优化中，待功能完善后将第一时间推送更新通知。</p>
               </div>
             </div>
 

@@ -338,7 +338,6 @@ defineExpose({
           <!-- 标题 -->
           <div class="auth-header">
             <h2 class="auth-title">{{ isLogin ? '登录账号' : '创建账号' }}</h2>
-            <p class="auth-subtitle">{{ isLogin ? '登录以同步您的云端数据' : '注册开始使用云端同步功能' }}</p>
           </div>
 
           <!-- ==================== 登录表单 ==================== -->
