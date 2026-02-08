@@ -158,7 +158,7 @@ const handleMaskClick = (e: MouseEvent) => {
             <div class="footer-info">
               <span class="version">重要事务记录本 v1.0</span>
               <span class="divider">|</span>
-              <span class="slogan">云端同步 · 数据安全</span>
+              <span class="slogan">高效管理 · 专注当下</span>
             </div>
             <button class="confirm-btn" @click="handleClose">关闭</button>
           </div>
